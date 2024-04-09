@@ -1,6 +1,6 @@
 [package]
 name = "rsvenv"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -8,7 +8,9 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.5.3", features = ["derive"] }
 config = { version = "0.14.0", features = ["yaml"] }
+error-stack = "0.4.1"
 glob = "0.3.1"
+itertools = "0.12.1"
 lazy_static = "1.4.0"
 serde = { version = "1.0.197", features = ["serde_derive"] }
 serde_derive = "1.0.197"

@@ -1,6 +1,7 @@
-use crate::virtualenv::VirtualEnvironment;
+use crate::{errors::CommandExecutionError, virtualenv::VirtualEnvironment};
 use clap::Parser;
-use simplelog::debug;
+use error_stack::{Result, ResultExt};
+use simplelog::{debug, error};
 use std::path::Path;
 
 #[derive(Debug, Parser)]
@@ -17,6 +18,7 @@ impl Command {
             };
         }
         if std::env::var("VIRTUAL_ENV").is_ok() {
+            debug!("Virtual environment has been just deactivated");
             return just_deactivated;
         }
 
@@ -41,15 +43,21 @@ impl Command {
         }
     }
 
-    pub fn execute(&self) {
+    pub fn execute(&self) -> Result<(), CommandExecutionError> {
         let deactivated = self.should_deactivate();
         if deactivated {
-            VirtualEnvironment::deactivate(false).unwrap_or(());
-        }
-        if self.should_activate(deactivated) {
-            if let Ok(method) = VirtualEnvironment::detect() {
-                method.activate(None).unwrap_or(())
+            if let Err(e) = VirtualEnvironment::deactivate(false) {
+                debug!("{e:?}");
+                error!("{e}");
             }
         }
+        if self.should_activate(deactivated) {
+            if let Some(venv) = VirtualEnvironment::detect() {
+                venv.activate(None).change_context(CommandExecutionError {
+                    command: "hook".into(),
+                })?;
+            };
+        }
+        Ok(())
     }
 }

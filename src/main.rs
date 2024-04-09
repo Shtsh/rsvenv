@@ -1,8 +1,11 @@
 extern crate simplelog;
-use simplelog::{ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode};
+use simplelog::{
+    debug, error, ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode,
+};
 mod arguments;
 mod commands;
 mod configuration;
+mod errors;
 mod shell;
 mod virtualenv;
 
@@ -23,5 +26,8 @@ fn main() {
     )])
     .unwrap();
     // execute sub-command
-    cli.command.unwrap().execute();
+    if let Err(e) = cli.command.unwrap().execute() {
+        error!("{e}");
+        debug!("{e:?}");
+    }
 }

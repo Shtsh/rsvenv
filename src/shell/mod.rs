@@ -2,9 +2,11 @@ mod bash;
 mod zsh;
 
 use simplelog::debug;
-use std::os::unix::process::parent_id;
 use std::str::FromStr;
+use std::{fmt::Display, os::unix::process::parent_id};
 use sysinfo::{Pid, System};
+
+use error_stack::{Context, Report, Result};
 
 #[derive(Debug, PartialEq)]
 pub enum SupportedShells {
@@ -13,14 +15,26 @@ pub enum SupportedShells {
     Fish,
 }
 
+#[derive(Debug)]
+pub struct ShellDetectionError {}
+
+impl Context for ShellDetectionError {}
+
+impl Display for ShellDetectionError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("Unable to detect shell")
+    }
+}
+
 impl FromStr for SupportedShells {
-    type Err = ();
-    fn from_str(input: &str) -> Result<SupportedShells, Self::Err> {
+    type Err = ShellDetectionError;
+
+    fn from_str(input: &str) -> std::result::Result<SupportedShells, Self::Err> {
         match input {
             "zsh" => Ok(SupportedShells::Zsh),
             "bash" => Ok(SupportedShells::Bash),
             "fish" => Ok(SupportedShells::Fish),
-            _ => Err(()),
+            _ => Err(ShellDetectionError {}),
         }
     }
 }
@@ -38,11 +52,13 @@ impl Hook for SupportedShells {
     }
 }
 
-pub fn detect_shell() -> SupportedShells {
+pub fn detect_shell() -> Result<SupportedShells, ShellDetectionError> {
     let mut system = System::new();
     system.refresh_processes();
-    let parent_process = system.process(Pid::from_u32(parent_id()));
-    let name = parent_process.unwrap().name();
+    let name = match system.process(Pid::from_u32(parent_id())) {
+        Some(parent_process) => parent_process.name(),
+        None => return Err(Report::new(ShellDetectionError {})),
+    };
     debug!("Parent process: {name:?}");
-    SupportedShells::from_str(name).unwrap()
+    Ok(SupportedShells::from_str(name)?)
 }

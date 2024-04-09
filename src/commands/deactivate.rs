@@ -1,5 +1,6 @@
-use crate::virtualenv::VirtualEnvironment;
+use crate::{errors::CommandExecutionError, virtualenv::VirtualEnvironment};
 use clap::Parser;
+use error_stack::{Result, ResultExt};
 
 #[derive(Debug, Parser)]
 pub struct Command {
@@ -8,7 +9,9 @@ pub struct Command {
 }
 
 impl Command {
-    pub fn execute(&self) {
-        let _ = VirtualEnvironment::deactivate(true);
+    pub fn execute(&self) -> Result<(), CommandExecutionError> {
+        VirtualEnvironment::deactivate(true).change_context(CommandExecutionError {
+            command: "deactivate".into(),
+        })
     }
 }

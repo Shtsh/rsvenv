@@ -1,6 +1,6 @@
-use crate::virtualenv::Rsenv;
+use crate::{errors::CommandExecutionError, virtualenv::rsenv::Rsenv};
 use clap::Parser;
-use simplelog::error;
+use error_stack::{Result, ResultExt};
 
 #[derive(Debug, Parser)]
 pub struct DeleteCommand {
@@ -9,9 +9,11 @@ pub struct DeleteCommand {
 }
 
 impl DeleteCommand {
-    pub fn execute(&self) {
-        if let Err(err) = Rsenv.delete(&self.venv) {
-            error!("{}", err);
-        }
+    pub fn execute(&self) -> Result<(), CommandExecutionError> {
+        Rsenv
+            .delete(self.venv.clone())
+            .change_context(CommandExecutionError {
+                command: "delete".into(),
+            })
     }
 }

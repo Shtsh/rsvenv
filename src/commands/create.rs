@@ -1,6 +1,7 @@
-use crate::virtualenv::Rsenv;
 use clap::Parser;
-use simplelog::error;
+use error_stack::{Result, ResultExt};
+
+use crate::{errors::CommandExecutionError, virtualenv::rsenv::Rsenv};
 
 #[derive(Debug, Parser)]
 pub struct CreateCommand {
@@ -11,9 +12,12 @@ pub struct CreateCommand {
 }
 
 impl CreateCommand {
-    pub fn execute(&self) {
-        if let Err(err) = Rsenv.create(&self.name, &self.python) {
-            error!("{}", err);
-        }
+    pub fn execute(&self) -> Result<(), CommandExecutionError> {
+        Rsenv
+            .create(&self.name, &self.python)
+            .change_context(CommandExecutionError {
+                command: "create".into(),
+            })?;
+        Ok(())
     }
 }

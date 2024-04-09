@@ -1,7 +1,10 @@
-use crate::virtualenv::{Pyenv, Rsenv, VirtualEnvCompatible};
+use crate::{
+    errors::{CommandExecutionError, VirtualEnvError},
+    virtualenv::{pyenv::Pyenv, rsenv::Rsenv, traits::VirtualEnvCompatible},
+};
 use clap::Parser;
+use error_stack::{Report, Result};
 use simplelog::error;
-use std::error::Error;
 
 #[derive(Debug, Parser)]
 pub struct UseCommand {
@@ -9,25 +12,31 @@ pub struct UseCommand {
     venv: String,
 }
 
-fn try_save(f: &dyn VirtualEnvCompatible, venv: &String) -> Result<(), Box<dyn Error>> {
-    if f.list().contains(venv) {
-        if let Err(e) = f.save(venv) {
-            error!("Error saving virtual env: {e}");
-            return Err(e);
-        }
+fn try_save(f: &dyn VirtualEnvCompatible, venv: String) -> Result<(), VirtualEnvError> {
+    if f.list().contains(&venv) {
+        f.save(&venv)?;
         return Ok(());
     }
-    Err("No such venv".into())
+    Err(
+        Report::new(VirtualEnvError::NotVirtualEnv(venv.clone())).attach_printable(format!(
+            "{} not in the list of existing virtual environments",
+            venv
+        )),
+    )
 }
 
 impl UseCommand {
-    pub fn execute(&self) {
-        if try_save(&Rsenv, &self.venv).is_ok() {
-            return;
-        };
-        if try_save(&Pyenv, &self.venv).is_ok() {
-            return;
-        };
+    pub fn execute(&self) -> Result<(), CommandExecutionError> {
+        match try_save(&Rsenv, self.venv.clone()) {
+            Ok(()) => return Ok(()),
+            Err(e) => error!("{e}"),
+        }
+        match try_save(&Pyenv, self.venv.clone()) {
+            Ok(()) => return Ok(()),
+            Err(e) => error!("{e}"),
+        }
+
         error!("Virtual environment {} doesn't exist", &self.venv);
+        Ok(())
     }
 }

@@ -1,5 +1,7 @@
+use crate::errors::CommandExecutionError;
 use crate::shell::{detect_shell, Hook};
 use clap::Parser;
+use error_stack::{Result, ResultExt};
 use std::io;
 use std::io::Write;
 
@@ -7,10 +9,20 @@ use std::io::Write;
 pub struct Command {}
 
 impl Command {
-    pub fn execute(&self) {
-        let shell = detect_shell();
+    pub fn execute(&self) -> Result<(), CommandExecutionError> {
+        let error_context = CommandExecutionError {
+            command: "init".into(),
+        };
+        let shell = detect_shell()
+            .change_context(error_context.clone())
+            .attach("Unable to detect current shell")?;
+
         let hook = shell.get_hook();
 
-        io::stdout().write_all(hook.as_bytes()).unwrap();
+        io::stdout()
+            .write_all(hook.as_bytes())
+            .change_context(error_context)
+            .attach("Unable to write hook to STDOUT!")?;
+        Ok(())
     }
 }

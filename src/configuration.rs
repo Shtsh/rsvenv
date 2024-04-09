@@ -22,5 +22,5 @@ impl Settings {
 }
 
 lazy_static! {
-    pub static ref SETTINGS: RwLock<Settings> = RwLock::new({ Settings::new().unwrap() });
+    pub static ref SETTINGS: RwLock<Settings> = RwLock::new(Settings::new().unwrap());
 }

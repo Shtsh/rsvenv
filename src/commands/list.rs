@@ -1,5 +1,7 @@
-use crate::virtualenv::{Pyenv, Rsenv, VirtualEnvCompatible};
+use crate::errors::CommandExecutionError;
+use crate::virtualenv::{pyenv::Pyenv, rsenv::Rsenv, traits::VirtualEnvCompatible};
 use clap::Parser;
+use error_stack::Result;
 use std::collections::HashSet;
 use std::io;
 use std::io::Write;
@@ -16,7 +18,7 @@ fn print_venvs(rsenv_venvs: HashSet<String>) {
 }
 
 impl ListCommand {
-    pub fn execute(&self) {
+    pub fn execute(&self) -> Result<(), CommandExecutionError> {
         let rsenv_venvs = Rsenv.list();
         if !rsenv_venvs.is_empty() {
             io::stdout()
@@ -31,5 +33,6 @@ impl ListCommand {
                 .unwrap_or(());
             print_venvs(pyenv_venvs);
         }
+        Ok(())
     }
 }
