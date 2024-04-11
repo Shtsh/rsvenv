@@ -13,33 +13,11 @@ use crate::errors::VirtualEnvError;
 
 use super::{
     traits::VirtualEnvCompatible,
-    utils::{get_current_dir, is_virtualenv},
+    utils::{get_current_dir, get_venvs_by_glob},
 };
 
 #[derive(Debug)]
 pub struct Pyenv;
-
-impl Pyenv {
-    fn try_list_root_dir<'a>(dir: PathBuf) -> Result<HashSet<String>, VirtualEnvError> {
-        let mut result = HashSet::new();
-        for path in glob::glob(format!("{}/*/envs/*/", &dir.as_path().display()).as_str())
-            .attach_printable("Unable to parse glob /*/envs/*/")
-            .change_context(VirtualEnvError::VenvBuildError)?
-            .flatten()
-        {
-            let value = path
-                .strip_prefix(&dir)
-                .attach_printable("Unable to strip prefix")
-                .change_context(VirtualEnvError::VenvBuildError)?
-                .to_str();
-            if is_virtualenv(&path).is_ok() && !value.is_none() {
-                result.insert(String::from(value.unwrap()));
-            }
-        }
-
-        Ok(result)
-    }
-}
 
 impl VirtualEnvCompatible for Pyenv {
     fn root_dir(&self) -> Result<PathBuf, VirtualEnvError> {
@@ -53,7 +31,7 @@ impl VirtualEnvCompatible for Pyenv {
 
     fn list(&self) -> HashSet<String> {
         if let Ok(root) = self.root_dir() {
-            return Pyenv::try_list_root_dir(root).unwrap_or_default();
+            return get_venvs_by_glob("*/envs/*".into(), &root).unwrap_or_default();
         }
         HashSet::new()
     }

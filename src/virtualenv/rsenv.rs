@@ -10,31 +10,15 @@ use error_stack::{Report, Result, ResultExt};
 use simplelog::{error, info};
 use std::io::Write;
 
-use itertools::Itertools;
-
 use super::{
     traits::VirtualEnvCompatible,
-    utils::{get_current_dir, is_virtualenv},
+    utils::{get_current_dir, get_venvs_by_glob},
 };
 
 #[derive(Debug)]
 pub struct Rsenv;
 
 impl Rsenv {
-    fn try_list_root_dir<'a>(dir: PathBuf) -> Result<HashSet<String>, VirtualEnvError> {
-        let result = dir
-            .read_dir()
-            .change_context(VirtualEnvError::IOError)
-            .attach_printable("Unable to create .python-version")?
-            .into_iter()
-            .filter_ok(|x| is_virtualenv(&x.path()).is_ok())
-            .map(|x| x.unwrap().file_name().into_string())
-            .filter(|x| x.is_ok())
-            .map(|x| x.unwrap());
-
-        Ok(HashSet::from_iter(result))
-    }
-
     pub fn create(&self, name: &String, python: &String) -> Result<(), VirtualEnvError> {
         if self.list().contains(name) {
             return Err(Report::new(VirtualEnvError::AlreadyExists(
@@ -112,7 +96,9 @@ impl VirtualEnvCompatible for Rsenv {
 
     fn list(&self) -> HashSet<String> {
         if let Ok(root) = self.root_dir() {
-            return Rsenv::try_list_root_dir(root).unwrap_or_default();
+            let mut venvs = get_venvs_by_glob("*/*".into(), &root).unwrap_or_default();
+            venvs.extend(get_venvs_by_glob("*".into(), &root).unwrap_or_default());
+            return venvs;
         }
         HashSet::new()
     }

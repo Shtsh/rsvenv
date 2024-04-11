@@ -18,3 +18,7 @@ shellexpand = "3.1.0"
 simplelog = { version = "0.12.2", features = ["paris"] }
 sysinfo = "0.30.7"
 
+[dev-dependencies]
+mockall = "0.12.1"
+tempfile = "3.10.1"
+
