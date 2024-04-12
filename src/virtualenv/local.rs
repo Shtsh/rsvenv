@@ -23,7 +23,7 @@ impl VirtualEnvCompatible for Local {
     fn venv_name(&self) -> Result<std::string::String, VirtualEnvError> {
         let current_path = self.root_dir()?;
         for local_venv_path in ["venv", ".venv", "virtualenv", ".virtualenv"] {
-            if let Ok(_) = is_virtualenv(&current_path.join(local_venv_path)) {
+            if is_virtualenv(&current_path.join(local_venv_path)).is_ok() {
                 return Ok(local_venv_path.to_string());
             }
         }

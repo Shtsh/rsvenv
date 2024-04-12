@@ -1,16 +1,21 @@
-use std::{collections::HashSet, fs, path::PathBuf};
+use std::{
+    collections::HashSet,
+    fs,
+    path::{Path, PathBuf},
+};
 
 use error_stack::{Report, Result, ResultExt};
 
 use crate::errors::VirtualEnvError;
 
-pub fn is_virtualenv(path: &PathBuf) -> Result<(), VirtualEnvError> {
+pub fn is_virtualenv(path: &Path) -> Result<(), VirtualEnvError> {
     if fs::metadata(path.join("bin").join("activate")).is_ok_and(|x| x.is_file()) {
         Ok(())
     } else {
         Err(Report::new(VirtualEnvError::NotVirtualEnv(
             path.to_string_lossy().to_string(),
-        )))
+        ))
+        .attach_printable("Is not a virtual environment"))
     }
 }
 
@@ -28,12 +33,14 @@ pub fn get_venvs_by_glob(glob: String, dir: &PathBuf) -> Result<HashSet<String>,
         .flatten()
     {
         let value = path
-            .strip_prefix(&dir)
+            .strip_prefix(dir)
             .attach_printable("Unable to strip prefix")
             .change_context(VirtualEnvError::VenvBuildError)?
             .to_str();
-        if is_virtualenv(&path).is_ok() && !value.is_none() {
-            result.insert(String::from(value.unwrap()));
+        if let Some(unwrapped) = value {
+            if is_virtualenv(&path).is_ok() {
+                result.insert(String::from(unwrapped));
+            }
         }
     }
 

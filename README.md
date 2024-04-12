@@ -24,7 +24,7 @@ rsvenv list
 Result will be something like this
 ```
 Rsenv environments:
-	test_rsenv
+	3.11.8/test_rsenv
 Pyenv environments:
 	3.12.1/envs/armis
 	3.9.9/envs/proxy_pac
@@ -36,6 +36,9 @@ To create a new virtual environment
 ```bash
 rsvenv create path/to/python venv_name
 ```
+The created virtual environment name will be python_version/venv_name
+
+
 After this it is possible to use this venv in current directory
 ```bash
 rsvenv use venv_name

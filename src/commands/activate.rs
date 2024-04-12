@@ -4,7 +4,7 @@ use simplelog::{debug, error};
 
 use crate::{
     errors::{CommandExecutionError, VirtualEnvError},
-    virtualenv::{pyenv::Pyenv, rsenv::Rsenv, traits::VirtualEnvCompatible, VirtualEnvironment},
+    virtualenv::{pyenv::Pyenv, rsenv::Rsenv, VirtualEnvironment},
 };
 
 #[derive(Debug, Parser)]
@@ -13,17 +13,18 @@ pub struct Command {
     virtualenv: String,
 }
 
-fn try_activate(f: &dyn VirtualEnvCompatible, venv: &String) -> Result<(), VirtualEnvError> {
-    if f.list().contains(venv) {
-        let venv_struct = VirtualEnvironment { kind: f };
-        if let Err(e) = venv_struct.activate(Some(venv)) {
+fn try_activate(v: VirtualEnvironment, venv: &String) -> Result<(), VirtualEnvError> {
+    if v.kind.list().contains(venv) {
+        if let Err(e) = v.activate(Some(venv)) {
             error!("{e}");
             return Err(e);
         };
+        return Ok(());
     }
-    Err(Report::new(VirtualEnvError::NotVirtualEnv(
-        venv.to_string(),
-    )))
+    Err(
+        Report::new(VirtualEnvError::NotVirtualEnv(venv.to_string()))
+            .attach_printable("{venv} is not a virtual environment"),
+    )
 }
 
 impl Command {
@@ -31,10 +32,10 @@ impl Command {
         if let Err(e) = VirtualEnvironment::deactivate(true) {
             debug!("{e}");
         };
-        if let Ok(_) = try_activate(&Rsenv, &self.virtualenv) {
+        if try_activate(VirtualEnvironment { kind: &Rsenv }, &self.virtualenv).is_ok() {
             return Ok(());
         }
-        if let Ok(_) = try_activate(&Pyenv, &self.virtualenv) {
+        if try_activate(VirtualEnvironment { kind: &Pyenv }, &self.virtualenv).is_ok() {
             return Ok(());
         }
         error!(

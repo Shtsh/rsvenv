@@ -1,5 +1,6 @@
 pub mod local;
 pub mod pyenv;
+mod python;
 pub mod rsenv;
 pub mod traits;
 mod utils;
@@ -10,20 +11,19 @@ use simplelog::info;
 use std::io;
 use std::io::Write;
 
-use crate::errors::VirtualEnvError;
-use crate::virtualenv::utils::{get_current_dir, is_virtualenv};
-
 use self::local::Local;
 use self::pyenv::Pyenv;
 use self::rsenv::Rsenv;
 use self::traits::VirtualEnvCompatible;
+use crate::errors::VirtualEnvError;
+use crate::virtualenv::utils::{get_current_dir, is_virtualenv};
 
-pub struct VirtualEnvironment<'a> {
+pub struct VirtualEnvironment {
     // Venv path
-    pub kind: &'a dyn VirtualEnvCompatible,
+    pub kind: &'static dyn VirtualEnvCompatible,
 }
 
-impl VirtualEnvironment<'_> {
+impl VirtualEnvironment {
     pub fn detect() -> Option<Self> {
         if Rsenv.relevant() {
             return Some(Self { kind: &Rsenv });

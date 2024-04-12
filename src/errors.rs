@@ -11,6 +11,7 @@ pub enum VirtualEnvError {
     CreatingError,
     IOError,
     ConfigurationError,
+    IncorrectName,
 }
 
 impl fmt::Display for VirtualEnvError {
@@ -27,6 +28,7 @@ impl fmt::Display for VirtualEnvError {
             }
             VirtualEnvError::ConfigurationError => "Configuration error".to_owned(),
             VirtualEnvError::CreatingError => "Error while creating virtual environment".to_owned(),
+            VirtualEnvError::IncorrectName => "Incorrect virtual environment name".to_owned(),
         };
         f.write_str(&data)
     }
@@ -46,3 +48,17 @@ impl fmt::Display for CommandExecutionError {
 }
 
 impl Context for CommandExecutionError {}
+
+#[derive(Debug)]
+pub enum PythonInterpreterError {
+    UnableToDetectVersion,
+    CreateVenvError,
+}
+
+impl fmt::Display for PythonInterpreterError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("Error running python interpreter")
+    }
+}
+
+impl Context for PythonInterpreterError {}

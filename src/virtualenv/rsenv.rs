@@ -2,15 +2,16 @@ use std::{
     collections::HashSet,
     fs::{self, File},
     path::{Path, PathBuf},
-    process,
 };
 
 use crate::{configuration::SETTINGS, errors::VirtualEnvError};
 use error_stack::{Report, Result, ResultExt};
+use regex::Regex;
 use simplelog::{error, info};
 use std::io::Write;
 
 use super::{
+    python::PythonInterpreter,
     traits::VirtualEnvCompatible,
     utils::{get_current_dir, get_venvs_by_glob},
 };
@@ -19,8 +20,25 @@ use super::{
 pub struct Rsenv;
 
 impl Rsenv {
+    pub fn validate_name(name: &str) -> Result<(), VirtualEnvError> {
+        if Regex::new(r"^[\w._]*$").unwrap().is_match(name)
+            || Regex::new(r"^[\w._]*\/[\w._]*$").unwrap().is_match(name)
+        {
+            return Ok(());
+        }
+        Err(Report::new(VirtualEnvError::IncorrectName).attach("name is invalid"))
+    }
+
     pub fn create(&self, name: &String, python: &String) -> Result<(), VirtualEnvError> {
-        if self.list().contains(name) {
+        let interpreter =
+            PythonInterpreter::new(python).change_context(VirtualEnvError::CreatingError)?;
+
+        let name_with_version = format!("{}/{}", &interpreter.version, name);
+        let existing = self.list();
+
+        Rsenv::validate_name(name)?;
+        if existing.contains(name) || existing.contains(&name_with_version) {
+            error!("Virtual environment {name} exists");
             return Err(Report::new(VirtualEnvError::AlreadyExists(
                 name.to_string(),
             )));
@@ -36,33 +54,16 @@ impl Rsenv {
             info!("Created root dir");
         }
 
-        let venv_path = path.join(name);
-        info!(
-            "Executing {} -m venv {}",
-            python,
-            &venv_path.as_path().display()
-        );
-        let status = process::Command::new(python)
-            .arg("-m")
-            .arg("venv")
-            .arg(venv_path)
-            .status()
+        let venv_path = path.join(&interpreter.version).join(name);
+        interpreter
+            .create_venv(&venv_path)
             .change_context(VirtualEnvError::CreatingError)?;
-
-        if status.code().unwrap_or_default() > 0 {
-            return Err(
-                Report::new(VirtualEnvError::CreatingError).attach_printable(format!(
-                    "Error creating venv {}: ",
-                    path.join(name).as_path().display()
-                )),
-            );
-        }
-
-        info!("Created virtual environment {name}");
+        info!("Created venv {name_with_version}");
         Ok(())
     }
 
     pub fn delete(&self, name: String) -> Result<(), VirtualEnvError> {
+        Rsenv::validate_name(&name)?;
         if !self.list().contains(&name) {
             error!("Virtual environment `{name}` is not found");
             return Err(Report::new(VirtualEnvError::NotVirtualEnv(name.clone()))
@@ -91,7 +92,7 @@ impl VirtualEnvCompatible for Rsenv {
         .change_context(VirtualEnvError::ConfigurationError)
         .attach_printable("unable to expand SETTINGS.path to the actual path")?
         .to_string();
-        Ok(Path::new(&expanded).to_path_buf().join("versions"))
+        Ok(Path::new(&expanded).to_path_buf().join("venvs"))
     }
 
     fn list(&self) -> HashSet<String> {
@@ -133,5 +134,24 @@ impl VirtualEnvCompatible for Rsenv {
         info!("Saved changes to .python-virtualenv");
         fs::remove_file(".python-version").unwrap_or_default();
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn test_name_ok() {
+        assert!(Rsenv::validate_name(&String::from("good_name")).is_ok());
+        assert!(Rsenv::validate_name(&String::from("Good_nAme")).is_ok());
+        assert!(Rsenv::validate_name(&String::from("Good_nAme/asdfadsf")).is_ok());
+    }
+    #[test]
+    fn test_bad_name() {
+        assert!(Rsenv::validate_name(&String::from("bad!name")).is_err());
+        assert!(Rsenv::validate_name(&String::from("Good_nAme/asdfadsf/smth")).is_err());
+        assert!(Rsenv::validate_name(&String::from("Good_nAme aa")).is_err());
     }
 }
