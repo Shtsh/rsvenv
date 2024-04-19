@@ -1,3 +1,5 @@
+pub const CONFIG: &str = "~/.zshrc";
+
 pub const HOOK: &str = r#"
 declare -f -F rsvenv > /dev/null && unset -f rsvenv
 

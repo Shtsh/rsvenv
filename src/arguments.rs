@@ -1,5 +1,6 @@
 use clap::{Parser, Subcommand};
 use error_stack::Result;
+use simplelog::debug;
 
 use crate::errors::CommandExecutionError;
 
@@ -12,6 +13,8 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Commands {
+    #[clap(name = "install", about = "Configure the shell to use RSVENV")]
+    Install(crate::commands::install::Command),
     #[clap(name = "init", about = "Configure the shell environment for pyenv")]
     Init(crate::commands::init::Command),
     #[clap(
@@ -41,6 +44,7 @@ pub enum Commands {
 
 impl Commands {
     pub fn execute(&self) -> Result<(), CommandExecutionError> {
+        debug!("executing command");
         match self {
             Commands::Init(command) => command.execute(),
             Commands::Activate(command) => command.execute(),
@@ -50,6 +54,7 @@ impl Commands {
             Commands::Use(command) => command.execute(),
             Commands::Create(command) => command.execute(),
             Commands::Delete(command) => command.execute(),
+            Commands::Install(command) => command.execute(),
         }
     }
 }

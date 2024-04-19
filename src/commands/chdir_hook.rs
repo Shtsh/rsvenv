@@ -29,6 +29,7 @@ impl Command {
         if std::env::var("VIRTUAL_ENV").is_err() {
             return false;
         }
+        debug!("VIRTUAL_ENV presents -> Virtual environment is active");
         match std::env::var("RSVENV_ACTIVATE_PATH") {
             Ok(value) => {
                 let activated_in_path = Path::new(&value);

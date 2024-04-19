@@ -1,6 +1,6 @@
 [package]
 name = "rsvenv"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -18,9 +18,7 @@ serde_derive = "1.0.197"
 shellexpand = "3.1.0"
 simplelog = { version = "0.12.2", features = ["paris"] }
 sysinfo = "0.30.7"
+tinytemplate = "1.2.1"
 
 [dev-dependencies]
-cfg-if = "1.0.0"
-mockall = "0.12.1"
 tempfile = "3.10.1"
-

@@ -14,7 +14,7 @@ and allows to use any python binary to create a new one.
 
 In order to use automatic virtual environment activation it is necessary to add to the end of ~/.zshrc (or ~/.bashrc)
 ```bash
-eval "$(rsvenv init)"
+rsvenv install
 ```
 
 To see available virtual environments 
@@ -41,7 +41,7 @@ The created virtual environment name will be python_version/venv_name
 
 After this it is possible to use this venv in current directory
 ```bash
-rsvenv use venv_name
+rsvenv use python_version/venv_name
 ```
 This command will create file .python-virtualenv that contains venv name
 
@@ -57,4 +57,4 @@ It is possible to configure parameters via environment variables
 | Variable         | Possible values | Default value | Description                                                                       |
 |------------------|----------------|--------------|-----------------------------------------------------------------------------------|
 | $RSVENV_VERBOSITY | i32 0..3       | 1            | How verbose the program must be: 0 - no messages, 1 - Info level, 2 - Debug level |
-| $RSVENV_PATH     | String         | "~/.rsenv"   | Directory to store all the virtual environments|
+| $RSVENV_PATH     | String         | "~/.rsvenv"   | Directory to store all the virtual environments|

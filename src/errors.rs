@@ -2,7 +2,7 @@ use core::fmt;
 
 use error_stack::Context;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum VirtualEnvError {
     VenvBuildError,
     NotVirtualEnv(String),
@@ -12,6 +12,8 @@ pub enum VirtualEnvError {
     IOError,
     ConfigurationError,
     IncorrectName,
+    TemplateRenderError,
+    ShellDetectionError,
 }
 
 impl fmt::Display for VirtualEnvError {
@@ -29,6 +31,8 @@ impl fmt::Display for VirtualEnvError {
             VirtualEnvError::ConfigurationError => "Configuration error".to_owned(),
             VirtualEnvError::CreatingError => "Error while creating virtual environment".to_owned(),
             VirtualEnvError::IncorrectName => "Incorrect virtual environment name".to_owned(),
+            VirtualEnvError::TemplateRenderError => "Unable to render template".to_owned(),
+            VirtualEnvError::ShellDetectionError => "Unable to detect current shell".to_owned(),
         };
         f.write_str(&data)
     }

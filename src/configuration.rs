@@ -14,7 +14,7 @@ impl Settings {
     pub fn new() -> Result<Self, ConfigError> {
         let settings = Config::builder()
             .set_default("verbosity", 1)?
-            .set_default("path", "~/.rsenv".to_string())?
+            .set_default("path", "~/.rsvenv".to_string())?
             .add_source(Environment::with_prefix("RSVENV"))
             .build()?;
         settings.try_deserialize()

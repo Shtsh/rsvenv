@@ -1,5 +1,5 @@
 use clap::Parser;
-use error_stack::{Report, Result};
+use error_stack::{Report, Result, ResultExt};
 use simplelog::{debug, error};
 
 use crate::{
@@ -14,7 +14,7 @@ pub struct Command {
 }
 
 fn try_activate(v: VirtualEnvironment, venv: &String) -> Result<(), VirtualEnvError> {
-    if v.kind.list().contains(venv) {
+    if v.list().contains(venv) {
         if let Err(e) = v.activate(Some(venv)) {
             error!("{e}");
             return Err(e);
@@ -29,13 +29,26 @@ fn try_activate(v: VirtualEnvironment, venv: &String) -> Result<(), VirtualEnvEr
 
 impl Command {
     pub fn execute(&self) -> Result<(), CommandExecutionError> {
+        let context = CommandExecutionError {
+            command: "activate".into(),
+        };
         if let Err(e) = VirtualEnvironment::deactivate(true) {
             debug!("{e}");
         };
-        if try_activate(VirtualEnvironment { kind: &Rsenv }, &self.virtualenv).is_ok() {
+        if try_activate(
+            VirtualEnvironment::new(&Rsenv).change_context(context.clone())?,
+            &self.virtualenv,
+        )
+        .is_ok()
+        {
             return Ok(());
         }
-        if try_activate(VirtualEnvironment { kind: &Pyenv }, &self.virtualenv).is_ok() {
+        if try_activate(
+            VirtualEnvironment::new(&Pyenv).change_context(context)?,
+            &self.virtualenv,
+        )
+        .is_ok()
+        {
             return Ok(());
         }
         error!(
@@ -45,6 +58,6 @@ impl Command {
         Err(Report::new(CommandExecutionError {
             command: "activate".into(),
         })
-        .attach_printable(format!("Unable to activate vitualenv {}", self.virtualenv)))
+        .attach_printable(format!("Unable to activate virtualenv {}", self.virtualenv)))
     }
 }

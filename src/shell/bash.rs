@@ -1,3 +1,5 @@
+pub const CONFIG: &str = "~/.bashrc";
+
 pub const HOOK: &str = r#"
 declare -f -F rsvenv > /dev/null && unset -f rsvenv
 
@@ -34,3 +36,16 @@ if ! [[ "\${PROMPT_COMMAND-}" =~ _rs_venv_virtualenv_hook ]]; then
   PROMPT_COMMAND="_rs_venv_virtualenv_hook;\${PROMPT_COMMAND-}"
 fi
 "#;
+
+pub static ACTIVATE_TEMPLATE: &str = r#"
+source {activate_path}
+export RSVENV_ACTIVATE_PATH={current_directory}
+"#;
+
+pub static DEACTIVATE_TEMPLATE: &str = r#"
+unset RSVENV_DEACTIVATE_PATH
+deactivate
+{{ if forced }}export RSVENV_DEACTIVATE_PATH=$RSVENV_ACTIVATE_PATH{{ endif }}
+"#;
+
+pub static INIT_COMMAND: &str = r#"eval "$(rsvenv init)""#;

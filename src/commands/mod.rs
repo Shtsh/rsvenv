@@ -4,5 +4,6 @@ pub mod create;
 pub mod deactivate;
 pub mod delete;
 pub mod init;
+pub mod install;
 pub mod list;
 pub mod use_command;
