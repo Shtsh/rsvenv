@@ -5,7 +5,6 @@ use simplelog::{
 mod arguments;
 mod commands;
 mod configuration;
-mod errors;
 mod shell;
 mod virtualenv;
 
@@ -18,13 +17,15 @@ fn main() {
         2 => LevelFilter::Debug,
         _ => LevelFilter::Trace,
     };
-    CombinedLogger::init(vec![TermLogger::new(
+    if let Err(e) = CombinedLogger::init(vec![TermLogger::new(
         log_level,
         Config::default(),
         TerminalMode::Stderr,
         ColorChoice::Auto,
-    )])
-    .unwrap();
+    )]) {
+        error!("Unable to initialize logger: {e:?}");
+    }
+
     // execute sub-command
     if let Err(e) = cli.command.unwrap().execute() {
         error!("{e}");

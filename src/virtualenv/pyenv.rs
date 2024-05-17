@@ -1,15 +1,12 @@
-use error_stack::{Result, ResultExt};
+use anyhow::{Context, Result};
 use std::{
     collections::HashSet,
     fs::{self, File},
+    io::Write,
     path::{Path, PathBuf},
 };
 
-use std::io::Write;
-
 use simplelog::{debug, info};
-
-use crate::errors::VirtualEnvError;
 
 use super::{
     traits::VirtualEnvCompatible,
@@ -20,11 +17,10 @@ use super::{
 pub struct Pyenv;
 
 impl VirtualEnvCompatible for Pyenv {
-    fn root_dir(&self) -> Result<PathBuf, VirtualEnvError> {
+    fn root_dir(&self) -> Result<PathBuf> {
         let root = std::env::var("PYENV_ROOT").unwrap_or("~/.pyenv".to_string());
         let expanded = shellexpand::full(&root)
-            .change_context(VirtualEnvError::ConfigurationError)
-            .attach_printable("unable to expand PYENV_ROOT to the actual path")?
+            .context("unable to expand PYENV_ROOT to the actual path")?
             .to_string();
         Ok(Path::new(&expanded).to_path_buf().join("versions"))
     }
@@ -51,23 +47,20 @@ impl VirtualEnvCompatible for Pyenv {
         false
     }
 
-    fn venv_name(&self) -> Result<std::string::String, VirtualEnvError> {
+    fn venv_name(&self) -> Result<String> {
         Ok(
             fs::read_to_string(get_current_dir()?.join(".python-version"))
-                .change_context(VirtualEnvError::IOError)
-                .attach_printable("Unable to read .python-verion")?
+                .context("Unable to read .python-verion")?
                 .trim()
                 .to_string(),
         )
     }
 
-    fn save(&self, name: &str) -> Result<(), VirtualEnvError> {
+    fn save(&self, name: &str) -> Result<()> {
         File::create(".python-version")
-            .change_context(VirtualEnvError::IOError)
-            .attach_printable("Unable to create .python-version")?
+            .context("Unable to create .python-version")?
             .write_all(name.as_bytes())
-            .change_context(VirtualEnvError::IOError)
-            .attach_printable("Unable to save data .python-version")?;
+            .context("Unable to save data .python-version")?;
         info!("Saved changes to .python-version");
         fs::remove_file(".python-virtualenv").unwrap_or_default();
         Ok(())

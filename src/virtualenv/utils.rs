@@ -4,38 +4,29 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use error_stack::{Report, Result, ResultExt};
+use anyhow::{bail, Context, Result};
 
-use crate::errors::VirtualEnvError;
-
-pub fn is_virtualenv(path: &Path) -> Result<(), VirtualEnvError> {
+pub fn is_virtualenv(path: &Path) -> Result<()> {
     if fs::metadata(path.join("bin").join("activate")).is_ok_and(|x| x.is_file()) {
         Ok(())
     } else {
-        Err(Report::new(VirtualEnvError::NotVirtualEnv(
-            path.to_string_lossy().to_string(),
-        ))
-        .attach_printable("Is not a virtual environment"))
+        bail!("{} is not a virtual environment", path.display());
     }
 }
 
-pub fn get_current_dir() -> Result<PathBuf, VirtualEnvError> {
-    std::env::current_dir()
-        .attach_printable("Unable to get current dir")
-        .change_context(VirtualEnvError::VenvBuildError)
+pub fn get_current_dir() -> Result<PathBuf> {
+    std::env::current_dir().context("Unable to get current dir")
 }
 
-pub fn get_venvs_by_glob(glob: String, dir: &PathBuf) -> Result<HashSet<String>, VirtualEnvError> {
+pub fn get_venvs_by_glob(glob: String, dir: &PathBuf) -> Result<HashSet<String>> {
     let mut result = HashSet::new();
     for path in glob::glob(format!("{}/{glob}", &dir.as_path().display()).as_str())
-        .attach_printable(format!("Unable to parse glob {glob}"))
-        .change_context(VirtualEnvError::VenvBuildError)?
+        .with_context(|| format!("Unable to parse glob {glob}"))?
         .flatten()
     {
         let value = path
             .strip_prefix(dir)
-            .attach_printable("Unable to strip prefix")
-            .change_context(VirtualEnvError::VenvBuildError)?
+            .context("Unable to strip prefix")?
             .to_str();
         if let Some(unwrapped) = value {
             if is_virtualenv(&path).is_ok() {

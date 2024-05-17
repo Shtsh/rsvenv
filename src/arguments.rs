@@ -1,8 +1,6 @@
+use anyhow::Result;
 use clap::{Parser, Subcommand};
-use error_stack::Result;
 use simplelog::debug;
-
-use crate::errors::CommandExecutionError;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None, arg_required_else_help(true))]
@@ -43,7 +41,7 @@ pub enum Commands {
 }
 
 impl Commands {
-    pub fn execute(&self) -> Result<(), CommandExecutionError> {
+    pub fn execute(&self) -> Result<()> {
         debug!("executing command");
         match self {
             Commands::Init(command) => command.execute(),
